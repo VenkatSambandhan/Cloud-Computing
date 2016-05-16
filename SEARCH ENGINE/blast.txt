@@ -1,0 +1,57 @@
+sudo mount -t vboxsf vbox_share ~/share
+
+
+
+cd /root/software/hadoop-1.1.2/
+. ./MultiNodesOneClickStartUp.sh /root/software/jdk1.6.0_33/ nodes
+cd /root/software/hbase-0.94.7/
+./bin/start-hbase.sh
+
+
+
+# prepare for hadoop and hbase environment
+
+cp /root/software/hbase-0.94.7/conf/hbase-site.xml /root/software/hadoop-1.1.2/conf/
+cd /root/software/hadoop-1.1.2/
+export HADOOP_CLASSPATH=`/root/software/hbase-0.94.7/bin/hbase classpath`
+
+
+
+# create hbase tables
+
+./bin/hadoop jar lib/cglHBaseMooc.jar iu.pti.hbaseapp.clueweb09.TableCreatorClueWeb09
+
+
+
+# create one directory for mapreduce data input
+
+mkdir -p /root/MoocHomeworks/HBaseWordCount/data/clueweb09/mrinput
+
+
+
+# create input's metadata for HBbase data loader
+
+./bin/hadoop jar lib/cglHBaseMooc.jar iu.pti.hbaseapp.clueweb09.Helpers create-mr-input /root/MoocHomeworks/HBaseWordCount/data/clueweb09/files/ /root/MoocHomeworks/HBaseWordCount/data/clueweb09/mrinput/ 1
+
+
+
+# copy metadata to Hadoop HDFS
+
+./bin/hadoop dfs -copyFromLocal /root/MoocHomeworks/HBaseWordCount/data/clueweb09/mrinput/ /cw09Loadinput
+./bin/hadoop dfs -ls /cw09Loadinput
+
+
+
+# load data into HBase (takes 10-20 minutes to finish)
+
+./bin/hadoop jar lib/cglHBaseMooc.jar iu.pti.hbaseapp.clueweb09.DataLoaderClueWeb09 /cw09Loadinput
+
+
+
+./bin/hadoop jar lib/cglHBaseMooc.jar iu.pti.hbaseapp.HBaseTableReader clueWeb09DataTable details string string string string 1 > dataTable1.txt
+vim dataTable1.txt
+
+
+
+cd .ssh/
+cat id_rsa.pub >> authorized_keys
